@@ -1,0 +1,892 @@
+// 1. NAVEGACIÓN
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.classList.remove('active');
+      l.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    link.classList.add('active');
+    link.setAttribute('aria-selected', 'true');
+    const panelId = link.dataset.tab;
+    document.getElementById(panelId).classList.add('active');
+  });
+});
+
+// 2. TEMA
+const themeToggle = document.getElementById('themeToggle');
+const htmlElement = document.documentElement;
+const savedTheme = localStorage.getItem('theme') || 'light';
+htmlElement.setAttribute('data-theme', savedTheme);
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = htmlElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    htmlElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  });
+}
+
+// 3. FUNCIONES DE LOS PROBLEMAS EXISTENTES
+const funcs = {
+  p1: (C) => 1 / (C - 8.5) - 0.35 * Math.log(C - 2),
+  p2: (t) => 45 + 12 * t - 20 * Math.exp(0.4 * t),
+  p3: (T) => T - (18 + 8 * Math.exp(-0.15 * T)),
+  p4: (t) => t ** 3 - 7 * t - 5,
+  p5: (x) => Math.exp(-x) - x ** 2 + 0.2,
+  p8: (z) => ((((8 * z - 6) * z - 3) * z + 3) * z - 1)
+};
+
+const fixedGs = {
+  p3: (T) => 18 + 8 * Math.exp(-0.15 * T)
+};
+
+const derivatives = {
+  p4: (t) => 3 * t ** 2 - 7
+};
+
+// 4. MÉTODOS NUMÉRICOS
+function biseccion(f, a, b, tol, maxIter) {
+  const rows = [];
+  let xrAnt = null;
+  for (let i = 1; i <= maxIter; i++) {
+    const xr = (a + b) / 2;
+    const fxr = f(xr);
+    const err = xrAnt === null ? null : (xr !== 0 ? Math.abs((xr - xrAnt) / xr) * 100 : Math.abs(xr - xrAnt) * 100);
+    rows.push({ i, a, b, xr, fxr, err });
+    if (!isFinite(fxr)) break;
+    if (fxr === 0 || (err !== null && err <= tol)) break;
+    if (f(a) * fxr < 0) b = xr; else a = xr;
+    xrAnt = xr;
+  }
+  return rows;
+}
+
+function falsaPosicion(f, a, b, tol, maxIter) {
+  const rows = [];
+  let xrAnt = null;
+  for (let i = 1; i <= maxIter; i++) {
+    const fa = f(a), fb = f(b);
+    const den = fa - fb;
+    if (den === 0) break;
+    const xr = b - fb * (a - b) / den;
+    const fxr = f(xr);
+    const err = xrAnt === null ? null : (xr !== 0 ? Math.abs((xr - xrAnt) / xr) * 100 : Math.abs(xr - xrAnt) * 100);
+    rows.push({ i, a, b, xr, fxr, err });
+    if (!isFinite(fxr)) break;
+    if (fxr === 0 || (err !== null && err <= tol)) break;
+    if (fa * fxr < 0) b = xr; else a = xr;
+    xrAnt = xr;
+  }
+  return rows;
+}
+
+function puntoFijo(g, f, x0, tol, maxIter) {
+  const rows = [];
+  let xPrev = x0;
+  for (let i = 1; i <= maxIter; i++) {
+    const x = g(xPrev);
+    const fx = f(x);
+    const err = i === 1 ? null : (x !== 0 ? Math.abs((x - xPrev) / x) * 100 : Math.abs(x - xPrev) * 100);
+    rows.push({ i, xPrev, x, xr: x, fxr: fx, err });
+    if (err !== null && err <= tol) break;
+    if (!isFinite(x) || !isFinite(fx)) break;
+    xPrev = x;
+  }
+  return rows;
+}
+
+function newtonRaphson(f, df, x0, tol, maxIter) {
+  const rows = [];
+  let xPrev = x0;
+  for (let i = 1; i <= maxIter; i++) {
+    const fx = f(xPrev);
+    const dfx = df(xPrev);
+    if (!isFinite(fx) || !isFinite(dfx) || Math.abs(dfx) < 1e-14) {
+      rows.push({ i, xPrev, xr: xPrev, fxr: fx, dfx, err: null, invalid: true });
+      break;
+    }
+    const x = xPrev - fx / dfx;
+    const err = x !== 0 ? Math.abs((x - xPrev) / x) * 100 : Math.abs(x - xPrev) * 100;
+    rows.push({ i, xPrev, xr: x, fxr: f(x), dfx, err });
+    if (!isFinite(x) || !isFinite(f(x))) break;
+    if (err <= tol) break;
+    xPrev = x;
+  }
+  return rows;
+}
+
+function secante(f, x0, x1, tol, maxIter) {
+  const rows = [];
+  let prev = x0, curr = x1;
+  for (let i = 1; i <= maxIter; i++) {
+    const fPrev = f(prev), fCurr = f(curr);
+    const den = fCurr - fPrev;
+    if (!isFinite(den) || Math.abs(den) < 1e-14) {
+      rows.push({ i, x0: prev, x1: curr, xr: curr, fxr: fCurr, err: null, invalid: true });
+      break;
+    }
+    const x = curr - fCurr * (curr - prev) / den;
+    const fx = f(x);
+    const err = x !== 0 ? Math.abs((x - curr) / x) * 100 : Math.abs(x - curr) * 100;
+    rows.push({ i, x0: prev, x1: curr, xr: x, fxr: fx, err });
+    if (!isFinite(x) || !isFinite(fx)) break;
+    if (err <= tol) break;
+    prev = curr;
+    curr = x;
+  }
+  return rows;
+}
+
+function muller(f, x0, x1, x2, tol, maxIter, absoluteTolerance = false) {
+  const rows = [];
+  for (let i = 1; i <= maxIter; i++) {
+    const f0 = f(x0), f1 = f(x1), f2 = f(x2);
+    const h0 = x1 - x0, h1 = x2 - x1;
+    if (![f0,f1,f2,h0,h1].every(isFinite) || Math.abs(h0) < 1e-14 || Math.abs(h1) < 1e-14) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const d0 = (f1-f0)/h0, d1 = (f2-f1)/h1;
+    const a = (d1-d0)/(h1+h0), b = a*h1+d1, c = f2;
+    const discriminant = b*b - 4*a*c;
+    if (!isFinite(discriminant) || discriminant < 0) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const radical = Math.sqrt(discriminant);
+    const den1 = b+radical, den2 = b-radical;
+    const den = Math.abs(den1) > Math.abs(den2) ? den1 : den2;
+    if (!isFinite(den) || Math.abs(den) < 1e-14) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const dx = -2*c/den, xr = x2+dx, fxr = f(xr);
+    const err = xr !== 0 ? Math.abs(dx/xr)*100 : Math.abs(dx)*100;
+    rows.push({ i, x0, x1, x2, xr, fxr, dx:Math.abs(dx), err });
+    if (!isFinite(xr) || !isFinite(fxr) || fxr === 0 || (absoluteTolerance ? Math.abs(dx) <= tol : err <= tol)) break;
+    x0=x1; x1=x2; x2=xr;
+  }
+  return rows;
+}
+
+function syntheticDivide(coeffs, root) {
+  const quotient = [coeffs[0]];
+  for (let i = 1; i < coeffs.length - 1; i++) {
+    quotient[i] = coeffs[i] + quotient[i - 1] * root;
+  }
+  const remainder = coeffs.at(-1) + quotient.at(-1) * root;
+  return { quotient, remainder };
+}
+
+function c(re, im = 0) { return { re, im }; }
+function cAdd(a, b) { return c(a.re + b.re, a.im + b.im); }
+function cSub(a, b) { return c(a.re - b.re, a.im - b.im); }
+function cMul(a, b) { return c(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re); }
+function cDiv(a, b) {
+  const den = b.re * b.re + b.im * b.im;
+  return c((a.re * b.re + a.im * b.im) / den, (a.im * b.re - a.re * b.im) / den);
+}
+function cAbs(a) { return Math.hypot(a.re, a.im); }
+
+function evalPolyComplex(coeffs, z) {
+  let value = c(coeffs[0], 0);
+  for (let i = 1; i < coeffs.length; i++) {
+    value = cAdd(cMul(value, z), c(coeffs[i], 0));
+  }
+  return value;
+}
+
+function durandKerner(coeffs, tol = 1e-12, maxIter = 120) {
+  const degree = coeffs.length - 1;
+  const lead = coeffs[0];
+  const normalized = coeffs.map(v => v / lead);
+  let roots = Array.from({ length: degree }, (_, i) => {
+    const angle = (2 * Math.PI * i) / degree;
+    return c(Math.cos(angle), Math.sin(angle));
+  });
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    let maxDelta = 0;
+    roots = roots.map((root, i) => {
+      let den = c(1, 0);
+      for (let j = 0; j < roots.length; j++) {
+        if (i !== j) den = cMul(den, cSub(root, roots[j]));
+      }
+      const delta = cDiv(evalPolyComplex(normalized, root), den);
+      maxDelta = Math.max(maxDelta, cAbs(delta));
+      return cSub(root, delta);
+    });
+    if (maxDelta <= tol) break;
+  }
+  return roots;
+}
+
+function formatRoot(root) {
+  if (Math.abs(root.im) < 1e-8) return fmt(root.re, 8);
+  const sign = root.im >= 0 ? '+' : '-';
+  return `${fmt(root.re, 8)} ${sign} ${fmt(Math.abs(root.im), 8)}i`;
+}
+
+function buildIirStabilityAnalysis(firstRoot) {
+  const coeffs = [8, -6, -3, 3, -1];
+  const { quotient, remainder } = syntheticDivide(coeffs, firstRoot);
+  const remaining = durandKerner(quotient);
+  const roots = [c(firstRoot, 0), ...remaining].sort((a, b) => a.re - b.re || a.im - b.im);
+  const rows = roots.map((root, index) => {
+    const module = cAbs(root);
+    return `<tr><td>z${index + 1}</td><td>${formatRoot(root)}</td><td>${fmt(module, 8)}</td><td>${module < 1 ? 'Dentro' : 'Fuera'}</td></tr>`;
+  }).join('');
+  const stable = roots.every(root => cAbs(root) < 1);
+  return `
+    <section class="stability-block" aria-label="Análisis de estabilidad del filtro">
+      <div class="stability-summary ${stable ? 'stable' : 'unstable'}">
+        <div><span>Deflación polinomial</span><strong>Cociente: ${quotient.map(v => fmt(v, 8)).join(', ')}</strong></div>
+        <div><span>Residuo</span><strong>${fmt(remainder, 10)}</strong></div>
+        <div><span>Conclusión</span><strong>${stable ? 'Filtro estable' : 'Filtro inestable'}</strong></div>
+      </div>
+      <div class="table-wrap">
+        <table class="iters root-table">
+          <thead><tr><th>Raíz</th><th>Valor aproximado</th><th>|z|</th><th>Región</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="interp-text"><strong>Análisis de ingeniería:</strong> después de aplicar deflación con la primera raíz calculada por Müller, se resuelve el polinomio reducido para obtener las raíces restantes. La tabla resume cada raíz <code>zᵢ</code>, su módulo y su posición respecto al círculo unitario. Como todos los módulos son menores que 1, las raíces permanecen dentro del círculo unitario del plano Z; por tanto, el filtro IIR usado en el procesamiento digital de audio es estable según el criterio solicitado.</p>
+    </section>`;
+}
+
+function fmt(n, d = 5) {
+  if (n === null || n === undefined || !isFinite(n)) return '—';
+  return n.toFixed(d);
+}
+
+// 5. GRÁFICO DE CONVERGENCIA
+function buildChartSVG(rows, color) {
+  const errs = rows.map(r => r.err).filter(e => e !== null && isFinite(e) && e > 0);
+  if (errs.length === 0) return '';
+  const w = 680, h = 210, pad = { l: 68, r: 16, t: 16, b: 34 };
+  const maxErr = Math.max(...errs), minErr = Math.min(...errs);
+  const logMax = Math.log10(maxErr);
+  const logMin = Math.log10(Math.max(minErr, 1e-6));
+  const span = (logMax - logMin) || 1;
+  const inset = 22;
+  const plotW = w - pad.l - pad.r - inset * 2, plotH = h - pad.t - pad.b;
+  const gridColor = 'var(--border-color)', axisColor = 'var(--text-muted)';
+  const textColor = 'var(--text-muted)', bgColor = 'var(--bg-card-alt)';
+  const pts = rows.map((r, idx) => {
+    const x = pad.l + inset + (idx / (rows.length - 1 || 1)) * plotW;
+    const val = (r.err === null || r.err <= 0) ? logMin : Math.log10(r.err);
+    const y = pad.t + (1 - (val - logMin) / span) * plotH;
+    return { x, y, r };
+  });
+  const path = pts.map((p, idx) => (idx === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+  const dots = pts.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" stroke="var(--bg-card)" stroke-width="1.5"><title>Iter ${p.r.i}: ${fmt(p.r.err,4)}%</title></circle>`).join('');
+  const yTicks = Array.from({ length: 5 }, (_, i) => {
+    const frac = i / 4, logVal = logMax - frac * span, val = Math.pow(10, logVal);
+    const y = pad.t + frac * plotH;
+    const label = val >= 10 ? val.toFixed(1) : (val >= 1 ? val.toFixed(2) : val.toFixed(4));
+    return { y, label };
+  });
+  const gridY = yTicks.map(t => `<line x1="${pad.l}" y1="${t.y.toFixed(1)}" x2="${w-pad.r}" y2="${t.y.toFixed(1)}" stroke="${gridColor}" stroke-width="1"/><text x="${pad.l-8}" y="${(t.y+4).toFixed(1)}" fill="${textColor}" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">${t.label}%</text>`).join('');
+  const n = rows.length, step = n <= 10 ? 1 : Math.ceil(n / 10);
+  const xTicks = rows.filter((r, idx) => idx % step === 0 || idx === n - 1).map(r => {
+    const idx = r.i - 1, x = pad.l + inset + (idx / (n - 1 || 1)) * plotW;
+    return `<line x1="${x.toFixed(1)}" y1="${pad.t}" x2="${x.toFixed(1)}" y2="${h-pad.b}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="2 3"/><text x="${x.toFixed(1)}" y="${h-pad.b+16}" fill="${textColor}" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="middle">${r.i}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;background:${bgColor};border-radius:8px;">${gridY}${xTicks}<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${h-pad.b}" stroke="${axisColor}" stroke-width="1.2"/><line x1="${pad.l}" y1="${h-pad.b}" x2="${w-pad.r}" y2="${h-pad.b}" stroke="${axisColor}" stroke-width="1.2"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>${dots}<text x="${pad.l}" y="11" fill="${textColor}" font-size="10" font-family="JetBrains Mono, monospace">error % (escala log)</text><text x="${w-pad.r}" y="${h-4}" fill="${textColor}" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">iteración</text></svg>`;
+}
+
+// 6. RENDER DE RESULTADOS
+function renderRows(rows, type) {
+  if (type === 'fixed') {
+    return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.xPrev,6)}</td><td>${fmt(r.xr,6)}</td><td>${fmt(r.fxr,7)}</td><td>${r.err===null?'—':fmt(r.err,5)+'%'}</td></tr>`).join('');
+  }
+  if (type === 'newton') {
+    return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.xPrev,6)}</td><td>${fmt(r.xr,6)}</td><td>${fmt(r.fxr,7)}</td><td>${fmt(r.dfx,7)}</td><td>${r.err===null?'—':fmt(r.err,5)+'%'}</td></tr>`).join('');
+  }
+  if (type === 'secant') {
+    return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.x0,6)}</td><td>${fmt(r.x1,6)}</td><td>${fmt(r.xr,6)}</td><td>${fmt(r.fxr,7)}</td><td>${r.err===null?'—':fmt(r.err,5)+'%'}</td></tr>`).join('');
+  }
+  if (type === 'muller') {
+    return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.x0,6)}</td><td>${fmt(r.x1,6)}</td><td>${fmt(r.x2,6)}</td><td>${fmt(r.xr,7)}</td><td>${fmt(r.fxr,8)}</td><td>${r.err===null?'—':fmt(r.err,6)+'%'}</td></tr>`).join('');
+  }
+  return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.a,5)}</td><td>${fmt(r.b,5)}</td><td>${fmt(r.xr,5)}</td><td>${fmt(r.fxr,6)}</td><td>${r.err===null?'—':fmt(r.err,4)+'%'}</td></tr>`).join('');
+}
+
+function tableHeader(type) {
+  if (type === 'fixed') return '<tr><th>Iter</th><th>x anterior</th><th>x nuevo</th><th>f(x)</th><th>Error (%)</th></tr>';
+  if (type === 'newton') return '<tr><th>Iter</th><th>x anterior</th><th>x nuevo</th><th>f(x)</th><th>f′(x)</th><th>Error (%)</th></tr>';
+  if (type === 'secant') return '<tr><th>Iter</th><th>x₀</th><th>x₁</th><th>x nuevo</th><th>f(x)</th><th>Error (%)</th></tr>';
+  if (type === 'muller') return '<tr><th>Iter</th><th>x₀</th><th>x₁</th><th>x₂</th><th>x nuevo</th><th>f(x)</th><th>Ea (%)</th></tr>';
+  return '<tr><th>Iter</th><th>a</th><th>b</th><th>xr</th><th>f(xr)</th><th>Error (%)</th></tr>';
+}
+
+function showResult(id, rows, methodLabel, type, interp, color, options = {}) {
+  const resBox = document.getElementById(id + '-results');
+  if (!rows || rows.length === 0) throw new Error('No se generaron iteraciones.');
+  const last = rows[rows.length - 1];
+  const requestedTol = parseFloat(document.getElementById(id+'-tol').value);
+  const usesAbsoluteMullerTolerance = type === 'muller' && (id === 'p8' || options.absoluteTolerance);
+  const converged = usesAbsoluteMullerTolerance ? (isFinite(last.dx) && last.dx <= requestedTol) : (last.err !== null && last.err <= requestedTol);
+  const invalid = last.invalid;
+  const state = invalid ? 'Revisar valores ⚠' : (converged ? 'Convergió ✓' : 'Máx. iter. alcanzado');
+  const tableRows = renderRows(rows, type);
+  resBox.innerHTML = `
+    <div class="result-head">
+      <div class="stat"><div class="label">Método</div><div class="value" style="font-size:15px;">${methodLabel}</div></div>
+      <div class="stat"><div class="label">Raíz aproximada</div><div class="value">${fmt(last.xr,6)}</div></div>
+      <div class="stat"><div class="label">f(raíz)</div><div class="value">${fmt(last.fxr,7)}</div></div>
+      <div class="stat"><div class="label">Iteraciones</div><div class="value">${last.i}</div></div>
+      <div class="stat ${converged && !invalid ? '' : 'warn'}"><div class="label">Estado</div><div class="value">${state}</div></div>
+    </div>
+    <div class="table-wrap"><table class="iters"><thead>${tableHeader(type)}</thead><tbody>${tableRows}</tbody></table></div>
+    <div class="chart-box"><div class="cap">Convergencia del error aproximado</div>${buildChartSVG(rows, color)}</div>
+    <p class="interp-text">${interp}</p>`;
+}
+
+// 7. EJECUTAR PROBLEMAS
+function runProblem(id) {
+  const errBox = document.getElementById(id+'-error');
+  const resBox = document.getElementById(id+'-results');
+  errBox.style.display='none'; errBox.textContent=''; resBox.innerHTML='';
+  const tol = parseFloat(document.getElementById(id+'-tol').value);
+  const maxIter = parseInt(document.getElementById(id+'-max').value);
+  if (!isFinite(tol) || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+    errBox.style.display='block'; errBox.textContent='La tolerancia debe ser positiva y las iteraciones máximas deben ser un entero mayor que 0.'; return;
+  }
+  try {
+    let rows, label, type, interp, color;
+    if (id === 'p1' || id === 'p2') {
+      const a=parseFloat(document.getElementById(id+'-a').value), b=parseFloat(document.getElementById(id+'-b').value);
+      const f=funcs[id];
+      if (!isFinite(a)||!isFinite(b)||a===b) throw new Error('Ingresa límites numéricos válidos y diferentes.');
+      if (id === 'p1' && (a <= 8.5 || b <= 8.5)) throw new Error('El intervalo de Bisección debe cumplir C > 8.5 en ambos extremos, según el dominio del modelo de enlace.');
+      const fa=f(a), fb=f(b);
+      if (!isFinite(fa)||!isFinite(fb)) throw new Error('El intervalo elegido queda fuera del dominio de la función.');
+      if (fa*fb>0) throw new Error(`No hay cambio de signo en [${a}, ${b}]. Elige un intervalo donde f(a) y f(b) tengan signos opuestos.`);
+      rows=id==='p1'?biseccion(f,a,b,tol,maxIter):falsaPosicion(f,a,b,tol,maxIter);
+      label=id==='p1'?'Bisección':'Falsa Posición'; type='bracket'; color=id==='p1'?'#7ba9a1':'#c9a87c';
+      interp=id==='p1'
+        ? `<strong>Interpretación:</strong> la raíz encontrada es <code>C ≈ ${fmt(rows.at(-1).xr,4)} Mbps</code>. Representa la capacidad mínima estimada para el enlace entre el centro de datos y la sucursal cuando el modelo de espera en cola se anula. El intervalo inicial se justifica por el cambio de signo entre 9 y 10 Mbps, y la tabla muestra cómo Bisección reduce ese intervalo hasta cumplir la tolerancia solicitada. Para contratar el enlace en un caso real conviene redondear hacia arriba, dejando margen operativo y evitando trabajar cerca del límite de estabilidad <code>C&gt;8.5</code>.`
+        : `<strong>Interpretación:</strong> la raíz encontrada es <code>t ≈ ${fmt(rows.at(-1).xr,4)} años</code>, el punto en que el costo acumulado local y el costo acumulado en la nube se igualan. Falsa Posición usa la interpolación lineal dentro del intervalo [0,5] para acercarse al cruce. Antes de ese tiempo se cumple <code>C₂(t) &lt; C₁(t)</code>, por lo que la nube resulta más económica según el modelo; después del cruce, el crecimiento exponencial de <code>C₂(t)</code> supera al costo local lineal.`;
+    } else if (id === 'p3') {
+      const x0=parseFloat(document.getElementById('p3-x0').value), f=funcs.p3, g=fixedGs.p3;
+      if (!isFinite(x0)) throw new Error('Ingresa un valor inicial T₀ válido.');
+      rows=puntoFijo(g,f,x0,tol,maxIter); label='Punto Fijo'; type='fixed'; color='#7ba9a1';
+      interp=`<strong>Interpretación:</strong> la temperatura de equilibrio obtenida es <code>T ≈ ${fmt(rows.at(-1).xr,6)} °C</code>. Este valor representa el balance entre temperatura ambiente, carga computacional y enfriamiento del centro de datos. La iteración parte de <code>T₀=${fmt(x0,3)}</code> y usa el despeje indicado <code>g(T)=18+8e^(−0.15T)</code>; la verificación queda dada por <code>f(T)=T−18−8e^(−0.15T)</code>, cercano a cero en la solución.`;
+    } else if (id === 'p4') {
+      const x0=parseFloat(document.getElementById('p4-x0').value), f=funcs.p4, df=derivatives.p4;
+      if (!isFinite(x0)) throw new Error('Ingresa un valor inicial t₀ válido.');
+      rows=newtonRaphson(f,df,x0,tol,maxIter); label='Newton-Raphson'; type='newton'; color='#c9a87c';
+      interp=`<strong>Interpretación:</strong> la solución aproximada es <code>t ≈ ${fmt(rows.at(-1).xr,6)} ms</code>. Es la raíz positiva asociada al tiempo promedio de respuesta del sistema de almacenamiento para la aplicación que procesa grandes volúmenes de información. Newton-Raphson corrige cada aproximación usando la pendiente local <code>f′(t)=3t²−7</code>; la evaluación final de <code>f(t)</code> queda cercana a cero, lo que verifica la solución numérica.`;
+    } else if (id === 'p5') {
+      const x0=parseFloat(document.getElementById('p5-x0').value), x1=parseFloat(document.getElementById('p5-x1').value), f=funcs.p5;
+      if (!isFinite(x0)||!isFinite(x1)||x0===x1) throw new Error('Los valores iniciales x₀ y x₁ deben ser numéricos y diferentes.');
+      rows=secante(f,x0,x1,tol,maxIter); label='Secante'; type='secant'; color='#7ba9a1';
+      interp=`<strong>Interpretación:</strong> el punto de operación aproximado del servidor es <code>x ≈ ${fmt(rows.at(-1).xr,6)}</code>. Este valor corresponde al nivel de carga normalizado donde el modelo de rendimiento se equilibra frente al incremento de solicitudes simultáneas. La Secante usa dos aproximaciones iniciales y reemplaza la derivada por una pendiente entre puntos; la tabla permite revisar el error porcentual hasta cumplir el criterio solicitado.`;
+    }
+    showResult(id,rows,label,type,interp,color);
+  } catch(e) {
+    errBox.style.display='block'; errBox.textContent=e.message;
+  }
+}
+
+function runMullerProblem() {
+  const errBox=document.getElementById('p8-error'), resBox=document.getElementById('p8-results');
+  errBox.style.display='none'; errBox.textContent=''; resBox.innerHTML='';
+  const x0=parseFloat(document.getElementById('p8-x0').value);
+  const x1=parseFloat(document.getElementById('p8-x1').value);
+  const x2=parseFloat(document.getElementById('p8-x2').value);
+  const tol=parseFloat(document.getElementById('p8-tol').value);
+  const maxIter=parseInt(document.getElementById('p8-max').value);
+  if (![x0,x1,x2,tol].every(isFinite) || new Set([x0,x1,x2]).size < 3 || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+    errBox.style.display='block'; errBox.textContent='Ingresa tres puntos iniciales distintos, una tolerancia positiva y un máximo de iteraciones válido.'; return;
+  }
+  try {
+    const rows=muller(funcs.p8,x0,x1,x2,tol,maxIter,true);
+    if (!rows.length || rows.at(-1).invalid) throw new Error('Müller no pudo continuar en números reales con estos puntos iniciales.');
+    const last=rows.at(-1);
+    const interp=`<strong>Interpretación:</strong> la primera raíz del denominador característico es <code>z ≈ ${fmt(last.xr,9)}</code>, con <code>|z|=${fmt(Math.abs(last.xr),9)} &lt; 1</code>. Esta raíz se encuentra dentro del círculo unitario. El bloque de estabilidad completa lo solicitado: deflación del polinomio, cálculo de raíces restantes, módulos <code>|zᵢ|</code> y decisión estable/inestable del filtro IIR.`;
+    showResult('p8',rows,'Müller','muller',interp,'#3977a8');
+    resBox.insertAdjacentHTML('beforeend', buildIirStabilityAnalysis(last.xr));
+  } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
+}
+
+// 8. PARSER SEGURO DE EXPRESIONES
+// Acepta notación matemática habitual: 2x, 2(x+1), x², x³, √x,
+// e^-x, π, ecuaciones del tipo f(x)=0 y funciones matemáticas comunes.
+function parseExpr(str, varName) {
+  let s = String(str ?? '').trim();
+  if (!s) throw new Error('Escribe una función.');
+
+  varName = String(varName || 'x').trim();
+  if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(varName)) {
+    throw new Error('El nombre de la variable debe empezar con una letra y solo puede contener letras y números.');
+  }
+
+  const reserved = ['sqrt','exp','ln','log10','sin','cos','tan','abs','pow','pi','e'];
+  if (reserved.includes(varName.toLowerCase())) {
+    throw new Error(`"${varName}" es un nombre reservado.`);
+  }
+
+  // Normalización de símbolos que suelen copiarse desde Word/PDF/WhatsApp.
+  s = s
+    .replace(/[−–—]/g, '-')
+    .replace(/[×·∙⋅]/g, '*')
+    .replace(/÷/g, '/')
+    .replace(/π/g, 'PI')
+    .replace(/√\s*/g, 'sqrt')
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .replace(/⁴/g, '^4')
+    .replace(/⁵/g, '^5')
+    .replace(/⁶/g, '^6')
+    .replace(/⁷/g, '^7')
+    .replace(/⁸/g, '^8')
+    .replace(/⁹/g, '^9')
+    .replace(/⁰/g, '^0')
+    .replace(/[⁽⁾]/g, m => m === '⁽' ? '(' : ')')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Notación abreviada frecuente al copiar fórmulas: 8e-0.15T = 8*exp(-0.15*T).
+  // Solo se aplica cuando después de e aparece signo, coeficiente y la variable.
+  const escapedVar = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Permite pegar expresiones desde los enunciados como f(x)=x^3-x-2=0,
+  // T(C)=... o D(z)=..., usando como función real el cuerpo matemático.
+  const leadingLabel = new RegExp(`^[a-zA-Z][a-zA-Z0-9]*\\s*\\(\\s*${escapedVar}\\s*\\)\\s*=\\s*`, 'i');
+  s = s.replace(leadingLabel, '');
+
+  const compactExp = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*e\\s*([+-])\\s*(\\d+(?:\\.\\d+)?)\\s*\\*?\\s*(${escapedVar})\\b`, 'gi');
+  s = s.replace(compactExp, '$1*exp($2$3*$4)');
+
+  // Acepta decimales con coma (0,15) sin romper pow(a,b).
+  // Las comas que pertenecen a pow(...) se protegen primero.
+  s = s.replace(/pow\s*\(([^()]*)\)/gi, (m, inside) => 'pow(' + inside.replace(/,/g, '@@ARG@@') + ')');
+  s = s.replace(/(\d),(?=\d)/g, '$1.');
+  s = s.replace(/@@ARG@@/g, ',');
+
+  // Permite escribir una ecuación completa: "e^-x - x² + 0.2 = 0".
+  // Se transforma a (lado_izquierdo) - (lado_derecho).
+  const equalParts = s.split('=');
+  if (equalParts.length > 2) throw new Error('La función solo puede contener un signo =.');
+  if (equalParts.length === 2) {
+    const left = equalParts[0].trim();
+    const right = equalParts[1].trim();
+    if (!left || !right) throw new Error('La ecuación debe tener expresiones a ambos lados del signo =.');
+    s = `(${left})-(${right})`;
+  }
+
+  // Caracteres permitidos. Las letras se validan después contra la lista de funciones.
+  const allowed = /^[0-9.\+\-*/^(),\s_a-zA-Z]*$/;
+  if (!allowed.test(s)) {
+    throw new Error('La función contiene caracteres no permitidos. Usa +, -, *, /, ^, paréntesis y las funciones disponibles.');
+  }
+
+  if (/(constructor|prototype|window|document|eval|=>|import|require|process|global|this|Function)/i.test(s)) {
+    throw new Error('La función contiene términos no permitidos.');
+  }
+
+  // Solo se admiten estas funciones/constantes y la variable elegida.
+  const identifiers = ['sqrt','exp','ln','log10','sin','cos','tan','abs','pow','PI','E','e',varName];
+  const idRegex = /[a-zA-Z][a-zA-Z0-9]*/g;
+  const found = s.match(idRegex) || [];
+  const unknown = [...new Set(found.filter(id => !identifiers.includes(id)))];
+  if (unknown.length) throw new Error('Nombre no reconocido: ' + unknown.join(', ') + '.');
+
+  // Multiplicación implícita: 2x, 2(x), x(…), )(…), 2sin(x), etc.
+  // Protegemos temporalmente las llamadas a funciones para no convertir sin(…) en sin*(…).
+  s = s.replace(/(sqrt|exp|ln|log10|sin|cos|tan|abs|pow)\s*\(/g, '$1@@(');
+  s = s.replace(/(\d|\))\s*(?=[a-zA-Z(])/g, '$1*');
+  s = s.replace(/([a-zA-Z0-9_)])\s*(?=\()/g, '$1*');
+  s = s.replace(/@@/g, '');
+
+  // Exponente matemático ^ -> JavaScript **.
+  s = s.replace(/\^/g, '**');
+
+  const body = `"use strict"; const {sqrt,exp,log10,sin,cos,tan,abs,pow,PI,E}=Math; const ln=Math.log; const e=Math.E; return (${s});`;
+  let fn;
+  try {
+    fn = new Function(varName, body);
+  } catch (err) {
+    throw new Error('Expresión inválida: revisa paréntesis, operadores y exponentes.');
+  }
+
+  // Comprobación sintáctica/numérica sin exigir que la función tenga dominio en 1.2345.
+  try {
+    const test = fn(1.2345);
+    if (typeof test !== 'number') throw new Error();
+  } catch (err) {
+    throw new Error('No se pudo evaluar la expresión. Revisa su sintaxis.');
+  }
+  return fn;
+}
+
+// 9. PERSONALIZADO
+function updateCustomFields() {
+  const method=document.getElementById('p6-method')?.value;
+  const gWrap=document.getElementById('p6-g-wrap'), dfWrap=document.getElementById('p6-df-wrap');
+  const aLabel=document.getElementById('p6-a-label'), bLabel=document.getElementById('p6-b-label');
+  const a=document.getElementById('p6-a'), b=document.getElementById('p6-b');
+  const tol=document.getElementById('p6-tol'), tolLabel=document.getElementById('p6-tol-label');
+  const bWrap=document.getElementById('p6-b-wrap');
+  const c=document.getElementById('p6-c'), cWrap=document.getElementById('p6-c-wrap');
+  if(!method) return;
+
+  // Mostrar únicamente los campos que realmente necesita cada método.
+  // Punto Fijo y Newton-Raphson usan solo x₀; Secante usa x₀ y x₁;
+  // Bisección/Falsa Posición usan a y b.
+  const hideX1 = method === 'puntoFijo' || method === 'newton';
+  if (gWrap) gWrap.style.display = method === 'puntoFijo' ? 'flex' : 'none';
+  if (dfWrap) dfWrap.style.display = method === 'newton' ? 'flex' : 'none';
+  if (bWrap) {
+    bWrap.hidden = hideX1;
+    bWrap.style.display = hideX1 ? 'none' : 'flex';
+  }
+  if (b) b.disabled = hideX1;
+  if (cWrap) { cWrap.hidden=method!=='muller'; cWrap.style.display=method==='muller'?'flex':'none'; }
+  if (c) c.disabled=method!=='muller';
+
+  if(method==='puntoFijo' || method==='newton' || method==='secante' || method==='muller') {
+    aLabel.textContent='x₀ (inicial)';
+    bLabel.textContent='x₁ (inicial)';
+  } else {
+    aLabel.textContent='a (límite inf.)';
+    bLabel.textContent='b (límite sup.)';
+  }
+  if(method==='puntoFijo') {
+    a.value='20'; b.value='21';
+  } else if(method==='newton') {
+    a.value='2'; b.value='3';
+  } else if(method==='secante') {
+    a.value='0'; b.value='1';
+  } else if(method==='muller') {
+    a.value='0'; b.value='0.5'; c.value='1';
+  }
+
+  if (tol && tolLabel) {
+    if (method === 'muller') {
+      tolLabel.textContent = 'Tolerancia ε';
+      tol.step = 'any';
+      tol.value = '0.00001';
+    } else if (method === 'biseccion' || method === 'falsaPosicion') {
+      tolLabel.textContent = 'Tolerancia (%)';
+      tol.step = '0.1';
+      tol.value = '0.5';
+    } else {
+      tolLabel.textContent = 'Tolerancia (%)';
+      tol.step = '0.01';
+      tol.value = '0.01';
+    }
+  }
+}
+
+function runCustom() {
+  const errBox=document.getElementById('p6-error'), resBox=document.getElementById('p6-results');
+  errBox.style.display='none'; errBox.textContent=''; resBox.innerHTML='';
+  const expr=document.getElementById('p6-fx').value, varName=document.getElementById('p6-var').value.trim()||'x';
+  const method=document.getElementById('p6-method').value;
+  const a=parseFloat(document.getElementById('p6-a').value), b=parseFloat(document.getElementById('p6-b').value);
+  const c=parseFloat(document.getElementById('p6-c').value);
+  const tol=parseFloat(document.getElementById('p6-tol').value), maxIter=parseInt(document.getElementById('p6-max').value);
+  if(!isFinite(a)||!isFinite(tol)||tol<=0||!Number.isInteger(maxIter)||maxIter<1) {
+    errBox.style.display='block'; errBox.textContent='Ingresa un x₀ (o límite inferior) válido, una tolerancia positiva y un máximo de iteraciones entero.'; return;
+  }
+  if((method==='biseccion'||method==='falsaPosicion'||method==='secante'||method==='muller') && (!isFinite(b)||a===b)) {
+    errBox.style.display='block'; errBox.textContent='Este método necesita dos valores iniciales/límites distintos: x₀ y x₁, o a y b.'; return;
+  }
+  if(method==='muller' && (!isFinite(c)||c===a||c===b)) {
+    errBox.style.display='block'; errBox.textContent='Müller necesita tres puntos iniciales numéricos y distintos: x₀, x₁ y x₂.'; return;
+  }
+  let f;
+  try { f=parseExpr(expr,varName); } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; return; }
+  try {
+    let rows,label,type,color,interp;
+    if(method==='biseccion'||method==='falsaPosicion') {
+      const fa=f(a),fb=f(b);
+      if(!isFinite(fa)||!isFinite(fb)) throw new Error('f(a) o f(b) no es finita.');
+      if(fa*fb>0) throw new Error(`No hay cambio de signo en [${a}, ${b}].`);
+      rows=method==='biseccion'?biseccion(f,a,b,tol,maxIter):falsaPosicion(f,a,b,tol,maxIter);
+      label=method==='biseccion'?'Bisección':'Falsa Posición'; type='bracket'; color='#7ba9a1';
+    } else if(method==='puntoFijo') {
+      const gx=parseExpr(document.getElementById('p6-gx').value,varName);
+      if(!isFinite(f(a))) throw new Error('f(x₀) no es finita. Revisa el dominio de la función.');
+      if(!isFinite(gx(a))) throw new Error('g(x₀) no es finita. Revisa g(x) y el valor inicial x₀.');
+      rows=puntoFijo(gx,f,a,tol,maxIter); label='Punto Fijo'; type='fixed'; color='#7ba9a1';
+    } else if(method==='newton') {
+      const df=parseExpr(document.getElementById('p6-dfx').value,varName);
+      if(!isFinite(f(a))) throw new Error('f(x₀) no es finita. Revisa el dominio de la función.');
+      if(!isFinite(df(a))) throw new Error('f′(x₀) no es finita. Revisa la derivada y el valor inicial x₀.');
+      rows=newtonRaphson(f,df,a,tol,maxIter); label='Newton-Raphson'; type='newton'; color='#c9a87c';
+    } else if(method==='secante') {
+      rows=secante(f,a,b,tol,maxIter); label='Secante'; type='secant'; color='#7ba9a1';
+    } else {
+      rows=muller(f,a,b,c,tol,maxIter,true); label='Müller'; type='muller'; color='#3977a8';
+    }
+    if(!rows.length) throw new Error('No se pudo generar una iteración.');
+    const last=rows.at(-1);
+    const tolText = method === 'muller' ? `ε=${tol}` : `${tol}%`;
+    interp=`<strong>Interpretación:</strong> la raíz aproximada es <code>${varName} ≈ ${fmt(last.xr,6)}</code>, obtenida con ${label.toLowerCase()} y una tolerancia de ${tolText}. Usa esta herramienta como verificación adicional o práctica con funciones propias sin modificar los ejercicios base del proyecto.`;
+    showResult('p6',rows,label,type,interp,color,{ absoluteTolerance: method === 'muller' });
+  } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
+}
+
+// 10. COMPARADOR: EJECUTA EL MISMO EJERCICIO EN LOS SEIS MÉTODOS
+function numericalDerivative(f) {
+  return x => {
+    const h = Math.sqrt(Number.EPSILON) * Math.max(1, Math.abs(x));
+    return (f(x + h) - f(x - h)) / (2 * h);
+  };
+}
+
+function findAutomaticBracket(f, x0) {
+  const f0 = f(x0);
+  if (!isFinite(f0)) throw new Error('f(x₀) está fuera del dominio de la función.');
+  if (f0 === 0) return [x0 - 0.5, x0];
+  let step = Math.max(0.25, Math.abs(x0) * 0.1);
+  for (let i = 0; i < 60; i++) {
+    const left = x0 - step, right = x0 + step;
+    const fl = f(left), fr = f(right);
+    if (isFinite(fl) && fl * f0 <= 0) return [left, x0];
+    if (isFinite(fr) && f0 * fr <= 0) return [x0, right];
+    if (isFinite(fl) && isFinite(fr) && fl * fr <= 0) return [left, right];
+    step *= 1.45;
+  }
+  throw new Error('No se encontró automáticamente un intervalo con cambio de signo. Ingresa un segundo valor b.');
+}
+
+function fixedPointFromEquation(expression, varName) {
+  const parts = String(expression).split('=');
+  if (parts.length !== 2) return null;
+  const left = parts[0].trim();
+  const right = parts[1].trim();
+  const plainVariable = new RegExp(`^${varName}$`, 'i');
+  if (plainVariable.test(left)) return parseExpr(right, varName);
+  if (plainVariable.test(right)) return parseExpr(left, varName);
+  return null;
+}
+
+function automaticFixedPointFunction(f, df, x0, a, b) {
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  const points = [];
+  if (isFinite(lo) && isFinite(hi) && lo !== hi) {
+    for (let i = 0; i <= 12; i++) points.push(lo + (hi - lo) * i / 12);
+  }
+  points.push(x0, (lo + hi) / 2);
+
+  const derivatives = points
+    .map(x => df(x))
+    .filter(v => isFinite(v) && Math.abs(v) > 1e-10);
+
+  if (!derivatives.length) {
+    throw new Error('No se pudo generar g(x) automáticamente porque la derivada es cero o no finita. Escribe un despeje g(x).');
+  }
+
+  const positives = derivatives.filter(v => v > 0).length;
+  const negatives = derivatives.filter(v => v < 0).length;
+  let sign = positives >= negatives ? 1 : -1;
+  const midpointDerivative = df((lo + hi) / 2);
+  if (isFinite(midpointDerivative) && Math.abs(midpointDerivative) > 1e-10) sign = Math.sign(midpointDerivative);
+
+  const sameSign = derivatives.filter(v => Math.sign(v) === sign);
+  const basis = sameSign.length ? sameSign : derivatives;
+  const maxAbs = Math.max(...basis.map(v => Math.abs(v)));
+  const slope = sign * Math.max(1, maxAbs * 1.35);
+  return x => x - f(x) / slope;
+}
+
+function comparisonStatus(rows, tol, options = {}) {
+  if (!rows || rows.length === 0) return { label: 'Sin iteraciones', className: 'failed' };
+  const last = rows.at(-1);
+  if (last.invalid || !isFinite(last.xr) || !isFinite(last.fxr)) return { label: 'No pudo continuar', className: 'failed' };
+  if (options.absoluteTolerance && isFinite(last.dx) && last.dx <= tol) return { label: 'Convergió ✓', className: 'success' };
+  if (Math.abs(last.fxr) <= 1e-10 || (last.err !== null && last.err <= tol)) return { label: 'Convergió ✓', className: 'success' };
+  return { label: 'No convergió', className: 'warning' };
+}
+
+function renderComparisonMethod(result, tol) {
+  if (result.error) {
+    return `<article class="method-result failed"><div class="method-title"><h3>${result.label}</h3><span class="method-state failed">No ejecutado</span></div><p class="method-message">${result.error}</p></article>`;
+  }
+  const last = result.rows.at(-1);
+  const methodTol = result.tolerance ?? tol;
+  const status = comparisonStatus(result.rows, methodTol, result);
+  const finalError = result.absoluteTolerance && result.type === 'muller'
+    ? `${fmt(last.dx, 8)}`
+    : (last.err === null ? '—' : fmt(last.err, 6) + '%');
+  const finalErrorLabel = result.absoluteTolerance && result.type === 'muller' ? 'Δ final' : 'Error final';
+  return `<article class="method-result">
+    <div class="method-title"><h3>${result.label}</h3><span class="method-state ${status.className}">${status.label}</span></div>
+    <div class="method-stats">
+      <div><span>Raíz aproximada</span><strong>${fmt(last.xr, 7)}</strong></div>
+      <div><span>f(raíz)</span><strong>${fmt(last.fxr, 8)}</strong></div>
+      <div><span>Iteraciones</span><strong>${result.rows.length}</strong></div>
+      <div><span>${finalErrorLabel}</span><strong>${finalError}</strong></div>
+    </div>
+    <div class="chart-box"><div class="cap">Gráfico de convergencia — ${result.label}</div>${buildChartSVG(result.rows, result.color) || '<p class="method-message">Se obtuvo una raíz exacta antes de poder calcular errores sucesivos.</p>'}</div>
+    <details class="iteration-details"><summary>Ver ${result.rows.length} iteraciones</summary><div class="table-wrap"><table class="iters"><thead>${tableHeader(result.type)}</thead><tbody>${renderRows(result.rows, result.type)}</tbody></table></div></details>
+  </article>`;
+}
+
+function runComparison() {
+  const errBox = document.getElementById('p7-error');
+  const resBox = document.getElementById('p7-results');
+  errBox.style.display = 'none'; errBox.textContent = ''; resBox.innerHTML = '';
+  const varName = document.getElementById('p7-var').value.trim() || 'x';
+  const a = parseFloat(document.getElementById('p7-a').value);
+  const bText = document.getElementById('p7-b').value.trim();
+  const suppliedB = bText === '' ? null : parseFloat(bText);
+  const c = parseFloat(document.getElementById('p7-c').value);
+  const tol = parseFloat(document.getElementById('p7-tol').value);
+  const mullerTol = parseFloat(document.getElementById('p7-muller-tol').value);
+  const maxIter = parseInt(document.getElementById('p7-max').value);
+  if (!isFinite(a) || !isFinite(c) || (suppliedB !== null && (!isFinite(suppliedB) || a === suppliedB)) || !isFinite(tol) || !isFinite(mullerTol) || tol <= 0 || mullerTol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+    errBox.style.display = 'block';
+    errBox.textContent = 'Ingresa valores iniciales válidos, tolerancias positivas y un máximo de iteraciones entero. Si escribes el segundo valor, debe ser diferente del primero.';
+    return;
+  }
+
+  try {
+    const functionText = document.getElementById('p7-fx').value.trim();
+    const fixedPointText = document.getElementById('p7-gx').value.trim();
+    let f = parseExpr(functionText, varName);
+    let enteredAsG = null;
+    let bracket;
+    if (suppliedB === null) {
+      try {
+        bracket = findAutomaticBracket(f, a);
+      } catch (bracketError) {
+        // Si solo se escribió el lado derecho de x=g(x), lo reconoce como g
+        // y construye f(x)=x-g(x) para aplicar los cinco métodos.
+        if (fixedPointText || functionText.includes('=')) throw bracketError;
+        enteredAsG = f;
+        f = x => x - enteredAsG(x);
+        bracket = findAutomaticBracket(f, a);
+      }
+    } else {
+      const fa=f(a), fb=f(suppliedB);
+      bracket=isFinite(fa)&&isFinite(fb)&&fa*fb<=0 ? [a,suppliedB] : findAutomaticBracket(f,a);
+    }
+    const bracketA = bracket[0], bracketB = bracket[1];
+    const intervalMid = (bracketA + bracketB) / 2;
+    const openX0 = isFinite(intervalMid) ? intervalMid : a;
+    const secantX0 = bracketA;
+    const secantX1 = bracketB;
+    const lo = Math.min(bracketA, bracketB);
+    const hi = Math.max(bracketA, bracketB);
+    const cInsideInterval = isFinite(c) && c > lo && c < hi && c !== bracketA && c !== bracketB;
+    const mullerX0 = bracketA;
+    const mullerX1 = cInsideInterval ? c : openX0;
+    let mullerX2 = bracketB;
+    if (mullerX1 === mullerX0 || mullerX1 === mullerX2) {
+      mullerX2 = mullerX1 + Math.max(0.5, Math.abs(mullerX1 - mullerX0));
+    }
+    const derivativeText = document.getElementById('p7-dfx').value.trim();
+    const df = derivativeText ? parseExpr(derivativeText, varName) : numericalDerivative(f);
+    let automaticG = false;
+    let equationG = false;
+    let g;
+    if (fixedPointText) {
+      g = parseExpr(fixedPointText, varName);
+    } else if (enteredAsG) {
+      g = enteredAsG;
+      equationG = true;
+    } else {
+      g = fixedPointFromEquation(functionText, varName);
+      if (g) {
+        equationG = true;
+      } else {
+        // Convierte f(x)=0 en x=g(x) con relajación calculada en el intervalo.
+        // La pendiente se sobredimensiona para favorecer |g'(x)| < 1 cerca de la raíz.
+        g = automaticFixedPointFunction(f, df, openX0, bracketA, bracketB);
+        automaticG = true;
+      }
+    }
+    const definitions = [
+      { label: 'Bisección', type: 'bracket', color: '#4f8f87', run: () => { if (!isFinite(f(bracketA)) || !isFinite(f(bracketB))) throw new Error('Los extremos están fuera del dominio de f.'); if (f(bracketA) * f(bracketB) > 0) throw new Error(`No hay cambio de signo en [${bracketA}, ${bracketB}].`); return biseccion(f, bracketA, bracketB, tol, maxIter); } },
+      { label: 'Falsa Posición', type: 'bracket', color: '#c28b52', run: () => { if (!isFinite(f(bracketA)) || !isFinite(f(bracketB))) throw new Error('Los extremos están fuera del dominio de f.'); if (f(bracketA) * f(bracketB) > 0) throw new Error(`No hay cambio de signo en [${bracketA}, ${bracketB}].`); return falsaPosicion(f, bracketA, bracketB, tol, maxIter); } },
+      { label: equationG ? 'Punto Fijo (g de la ecuación)' : (automaticG ? 'Punto Fijo (g automática)' : 'Punto Fijo'), type: 'fixed', color: '#8067b7', run: () => { if (!isFinite(g(openX0))) throw new Error('g(x₀) está fuera de su dominio.'); return puntoFijo(g, f, openX0, tol, maxIter); } },
+      { label: 'Newton-Raphson', type: 'newton', color: '#ca6573', run: () => { if (!isFinite(f(openX0)) || !isFinite(df(openX0))) throw new Error('f(x₀) o su derivada no es finita.'); return newtonRaphson(f, df, openX0, tol, maxIter); } },
+      { label: 'Secante', type: 'secant', color: '#3977a8', run: () => secante(f, secantX0, secantX1, tol, maxIter) },
+      { label: 'Müller', type: 'muller', color: '#2f7d9b', absoluteTolerance: true, tolerance: mullerTol, run: () => muller(f, mullerX0, mullerX1, mullerX2, mullerTol, maxIter, true) }
+    ];
+    const results = definitions.map(def => {
+      try {
+        const rows = def.run();
+        if (!rows.length) throw new Error('No se generaron iteraciones.');
+        return { ...def, rows };
+      } catch (error) { return { ...def, error: error.message }; }
+    });
+    const completed = results.filter(r => !r.error);
+    const converged = completed.filter(r => comparisonStatus(r.rows, r.tolerance ?? tol, r).className === 'success').length;
+    resBox.innerHTML = `<div class="comparison-summary">
+      <div><span>Métodos evaluados</span><strong>6</strong></div>
+      <div><span>Convergieron</span><strong>${converged}</strong></div>
+      <div><span>Función</span><strong>f(${varName})</strong></div>
+      <div><span>Valores usados</span><strong>${suppliedB === null ? 'intervalo automático' : 'intervalo [a,b]'}</strong></div>
+      <div><span>Tolerancias</span><strong>${tol}% · ε=${mullerTol}</strong></div>
+    </div><div class="method-results">${results.map(r => renderComparisonMethod(r, tol)).join('')}</div>`;
+  } catch (error) {
+    errBox.style.display = 'block'; errBox.textContent = error.message;
+  }
+}
+
+// 11. INICIALIZACIÓN
+document.addEventListener('DOMContentLoaded', () => {
+  runProblem('p1');
+  runProblem('p2');
+  runProblem('p3');
+  runProblem('p4');
+  runProblem('p5');
+  runMullerProblem();
+  const method=document.getElementById('p6-method');
+  if(method) {
+    method.addEventListener('change', updateCustomFields);
+    updateCustomFields();
+  }
+  document.querySelectorAll('#p6 form').forEach(form => {
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      runCustom();
+    });
+  });
+  document.querySelector('#p6 button[type="submit"]')?.addEventListener('click', event => {
+    event.preventDefault();
+    runCustom();
+  });
+  document.querySelector('#p7 form.compare-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    runComparison();
+  });
+  document.querySelector('#p7 button[type="submit"]')?.addEventListener('click', event => {
+    event.preventDefault();
+    runComparison();
+  });
+  const p3VarInput=document.getElementById('p6-var'), p3FxLabel=document.getElementById('p6-fx-label');
+  if(p3VarInput && p3FxLabel) p3VarInput.addEventListener('input',()=>{ const v=p3VarInput.value.trim()||'x'; p3FxLabel.textContent=`f(${v}) =`; });
+  const gLabel=document.getElementById('p6-gx-label'), dfLabel=document.getElementById('p6-dfx-label');
+  if(p3VarInput) p3VarInput.addEventListener('input',()=>{
+    const v=p3VarInput.value.trim()||'x';
+    if(gLabel) gLabel.textContent=`g(${v}) =`;
+    if(dfLabel) dfLabel.textContent=`f'(${v}) =`;
+  });
+  const compareVar = document.getElementById('p7-var');
+  if (compareVar) compareVar.addEventListener('input', () => {
+    const previous = compareVar.dataset.previousVar || 'x';
+    const v = compareVar.value.trim() || 'x';
+    document.getElementById('p7-fx-label').textContent = `f(${v}) =`;
+    document.getElementById('p7-gx-label').textContent = `g(${v}) = (opcional)`;
+    document.getElementById('p7-dfx-label').textContent = `f'(${v}) = (opcional)`;
+    if (previous !== v) {
+      const previousPattern = new RegExp(`\\b${previous.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      const currentPattern = new RegExp(`\\b${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      ['p7-gx', 'p7-dfx'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input?.value && previousPattern.test(input.value) && !currentPattern.test(input.value)) {
+          input.value = '';
+        }
+      });
+    }
+    compareVar.dataset.previousVar = v;
+  });
+  if (compareVar) compareVar.dataset.previousVar = compareVar.value.trim() || 'x';
+});
