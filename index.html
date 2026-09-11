@@ -70,48 +70,34 @@
         <!-- ===================== PROBLEMA 1 ===================== -->
         <section class="panel active" id="p1" role="tabpanel" aria-labelledby="tab-p1">
             <div class="card">
-                <h2>Dimensionamiento de enlace de red <span class="tag">Bisección</span></h2>
+                <h2>Dimensionamiento de un enlace de red bajo carga variable</h2>
                 <p>Una empresa de telecomunicaciones necesita dimensionar la capacidad <code>C</code>, en Mbps, de un enlace de datos que conecta un centro de datos con una sucursal. El tiempo de espera promedio de los paquetes en la cola del enlace, medido en milisegundos, se modela mediante:</p>
                 <div class="formula">T(C) = 1 / (C − 8.5) − 0.35·ln(C − 2)<small>Dominio válido: C &gt; 8.5 (estabilidad del sistema)</small></div>
                 <p>En el modelo, <code>C</code> representa la capacidad contratada del enlace y <code>T(C)</code> representa el tiempo promedio de espera. El dominio <code>C&gt;8.5</code> evita operar en una zona inestable, donde el término <code>1/(C−8.5)</code> crece sin control.</p>
                 <p>El equipo de infraestructura determina que la capacidad óptima se obtiene cuando el modelo de espera se hace igual a cero. Por eso se plantea la ecuación de raíz:</p>
                 <div class="formula">f(C) = 1 / (C − 8.5) − 0.35·ln(C − 2) = 0</div>
-                <div class="info-strip">
-                    <article><span>Variable</span><strong>C en Mbps</strong></article>
-                    <article><span>Dominio</span><strong>C &gt; 8.5</strong></article>
-                    <article><span>Objetivo</span><strong>Capacidad mínima estable</strong></article>
-                </div>
             </div>
 
             <div class="card">
-                <h2>Aislamiento de la raíz <span class="tag">[a, b]</span></h2>
+                <h2>Aislamiento de la raíz</h2>
                 <p>Se evalúa f(C) por signos para localizar un cambio de signo. Cuando C → 8.5⁺, el término 1/(C−8.5) → +∞, de modo que f(C) → +∞. Cuando C crece, ese término se aproxima a 0 mientras −0.35·ln(C−2) decrece sin límite, por lo que f(C) → −∞. Existe entonces una raíz en algún punto intermedio:</p>
                 <table class="signtable">
-                    <thead><tr><th>C (Mbps)</th><th>f(C)</th><th>Signo</th></tr></thead>
+                    <thead><tr><th>C(Mbps)</th><th>f(C)</th><th>Signo</th></tr></thead>
                     <tbody>
                         <tr><td>9.0</td><td>+1.3190</td><td class="pos">+</td></tr>
                         <tr><td>10.0</td><td>−0.0611</td><td class="neg">−</td></tr>
                     </tbody>
                 </table>
                 <p style="margin-top:10px;">Como f(9) &gt; 0 y f(10) &lt; 0, hay cambio de signo ⇒ se garantiza una raíz en <strong>[a, b] = [9, 10]</strong>, dentro del dominio válido C &gt; 8.5.</p>
-                <div class="method-note">El método cerrado es apropiado porque el intervalo contiene un cambio de signo y la función está definida en todo el tramo seleccionado.</div>
             </div>
 
             <div class="card">
-                <h2>Programa computacional <span class="tag">Método de Bisección</span></h2>
-                <p>Ejecuta Bisección con el intervalo justificado, tolerancia sugerida de 0.5% y máximo de 50 iteraciones. La tabla conserva iteración, <code>a</code>, <code>b</code>, <code>xr</code>, <code>f(xr)</code> y error aproximado porcentual.</p>
-                <ul class="doc-checklist">
-                    <li>Se presenta la interpretación matemática del problema de ingeniería antes de ejecutar el método.</li>
-                    <li>Se reduce el intervalo escogiendo el subtramo donde permanece el cambio de signo.</li>
-                    <li>Se detiene cuando el error aproximado porcentual cumple la tolerancia o se alcanza el máximo de iteraciones.</li>
-                    <li>Se genera tabla de iteraciones y gráfica de convergencia del error.</li>
-                    <li>La interpretación final indica la capacidad que conviene contratar y por qué se recomienda redondear hacia arriba.</li>
-                </ul>
+                <h2>Programa computacional</h2>
                 <form class="controls" onsubmit="event.preventDefault(); runProblem('p1');">
-                    <div class="field"><label for="p1-a">a (límite inferior)</label><input type="number" id="p1-a" name="p1-a" value="9" step="0.1"></div>
-                    <div class="field"><label for="p1-b">b (límite superior)</label><input type="number" id="p1-b" name="p1-b" value="10" step="0.1"></div>
-                    <div class="field"><label for="p1-tol">Tolerancia (%)</label><input type="number" id="p1-tol" name="p1-tol" value="0.5" step="0.1"></div>
-                    <div class="field"><label for="p1-max">Iter. máximas</label><input type="number" id="p1-max" name="p1-max" value="50" step="1"></div>
+                    <div class="field"><label for="p1-a">a</label><input type="number" id="p1-a" name="p1-a" value="9" step="0.1"></div>
+                    <div class="field"><label for="p1-b">b</label><input type="number" id="p1-b" name="p1-b" value="10" step="0.1"></div>
+                    <div class="field"><label for="p1-tol">Tolerancia(%)</label><input type="number" id="p1-tol" name="p1-tol" value="0.5" step="0.1"></div>
+                    <div class="field"><label for="p1-max">Iteraciones</label><input type="number" id="p1-max" name="p1-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p1-error" class="err" role="alert"></p>
@@ -122,26 +108,21 @@
         <!-- ===================== PROBLEMA 2 ===================== -->
         <section class="panel" id="p2" role="tabpanel" aria-labelledby="tab-p2">
             <div class="card">
-                <h2>Equilibrio de migración a la nube <span class="tag">Falsa Posición</span></h2>
+                <h2>Punto de equilibrio en la migración de un sistema a la nube</h2>
                 <p>Una empresa evalúa migrar un sistema de información local, alojado en servidores propios, hacia un proveedor de servicios en la nube. El costo acumulado de mantenerlo localmente, en miles de soles, durante <code>t</code> años es:</p>
                 <div class="formula">C₁(t) = 45 + 12t</div>
                 <p>El costo acumulado de operarlo en la nube incluye la migración inicial y un costo variable exponencial asociado al crecimiento proyectado de datos y recursos:</p>
                 <div class="formula">C₂(t) = 20·e^(0.4t)</div>
                 <p>El punto de equilibrio ocurre cuando ambos costos acumulados se igualan; por tanto, se debe encontrar la raíz de:</p>
                 <div class="formula">f(t) = C₁(t) − C₂(t) = 45 + 12t − 20·e^(0.4t) = 0</div>
-                <p>La lectura de signos permite comparar alternativas: si <code>f(t)&gt;0</code>, el costo local acumulado es mayor que el costo en nube; si <code>f(t)&lt;0</code>, el costo en nube supera al costo local.</p>
-                <div class="info-strip">
-                    <article><span>Variable</span><strong>t en años</strong></article>
-                    <article><span>Unidades</span><strong>Miles de soles</strong></article>
-                    <article><span>Objetivo</span><strong>Tiempo de equilibrio</strong></article>
-                </div>
+                <p>La lectura de signos permite comparar alternativas: si <code>f(t)&gt;0</code>, el costo local acumulado es mayor que el costo en nube; si <code>f(t)&lt;0</code>, el costo en nube supera al costo local.</p>        
             </div>
 
             <div class="card">
                 <h2>Aislamiento del intervalo <span class="tag">[a, b]</span></h2>
                 <p>Se evalúa f(t) entre 0 y 5 años:</p>
                 <table class="signtable">
-                    <thead><tr><th>t (años)</th><th>f(t)</th><th>Signo</th></tr></thead>
+                    <thead><tr><th>t(años)</th><th>f(t)</th><th>Signo</th></tr></thead>
                     <tbody>
                         <tr><td>0</td><td>+25.000</td><td class="pos">+</td></tr>
                         <tr><td>3</td><td>+14.598</td><td class="pos">+</td></tr>
@@ -149,24 +130,15 @@
                     </tbody>
                 </table>
                 <p style="margin-top:10px;">En t = 0 se tiene C₁(0)=45 y C₂(0)=20, por lo que f(0)&gt;0. Como C₂(t) crece exponencialmente, termina superando a C₁(t), que crece de forma lineal; por eso f(5)&lt;0. Existe cambio de signo y la raíz queda garantizada en <strong>[a, b] = [0, 5]</strong>.</p>
-                <div class="method-note">El intervalo permite comparar el costo local y el costo en nube antes y después del cruce, que es la interpretación central del problema.</div>
             </div>
 
             <div class="card">
-                <h2>Programa computacional <span class="tag">Método de Falsa Posición</span></h2>
-                <p>Ejecuta Regula Falsi con tolerancia sugerida de 0.5% y máximo de 50 iteraciones. La tabla presenta el valor interpolado <code>xr</code>, la evaluación de la función y el error relativo para interpretar el año de equilibrio.</p>
-                <ul class="doc-checklist">
-                    <li>Se formula el punto de equilibrio como igualdad entre costo local y costo en nube.</li>
-                    <li>Se usa la recta secante entre los extremos del intervalo para estimar <code>xr</code>.</li>
-                    <li>Se conserva el extremo que mantiene el cambio de signo con la nueva aproximación.</li>
-                    <li>Se muestra tabla con iteración, intervalo, <code>xr</code>, <code>f(xr)</code> y error relativo.</li>
-                    <li>La conclusión compara qué alternativa resulta menor antes del equilibrio y qué ocurre después.</li>
-                </ul>
+                <h2>Programa computacional</h2>        
                 <form class="controls" onsubmit="event.preventDefault(); runProblem('p2');">
-                    <div class="field"><label for="p2-a">a (límite inferior)</label><input type="number" id="p2-a" name="p2-a" value="0" step="0.1"></div>
-                    <div class="field"><label for="p2-b">b (límite superior)</label><input type="number" id="p2-b" name="p2-b" value="5" step="0.1"></div>
-                    <div class="field"><label for="p2-tol">Tolerancia (%)</label><input type="number" id="p2-tol" name="p2-tol" value="0.5" step="0.1"></div>
-                    <div class="field"><label for="p2-max">Iter. máximas</label><input type="number" id="p2-max" name="p2-max" value="50" step="1"></div>
+                    <div class="field"><label for="p2-a">a</label><input type="number" id="p2-a" name="p2-a" value="0" step="0.1"></div>
+                    <div class="field"><label for="p2-b">b</label><input type="number" id="p2-b" name="p2-b" value="5" step="0.1"></div>
+                    <div class="field"><label for="p2-tol">Tolerancia(%)</label><input type="number" id="p2-tol" name="p2-tol" value="0.5" step="0.1"></div>
+                    <div class="field"><label for="p2-max">Iteraciones</label><input type="number" id="p2-max" name="p2-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p2-error" class="err" role="alert"></p>
@@ -179,34 +151,21 @@
         <!-- ===================== PROBLEMA 3: PUNTO FIJO ===================== -->
         <section class="panel" id="p3" role="tabpanel" aria-labelledby="tab-p3">
             <div class="card">
-                <h2>Control de temperatura en centro de datos <span class="tag">Punto Fijo</span></h2>
+                <h2>Control de temperatura en un centro de datos</h2>
                 <p>Un centro de datos debe mantener la temperatura de una sala de servidores dentro de un rango adecuado. Debido a la interacción entre la temperatura ambiente, la carga computacional y el sistema de enfriamiento, la temperatura de equilibrio <code>T</code>, en °C, satisface:</p>
                 <div class="formula">T = 18 + 8e<sup>−0.15T</sup></div>
                 <p>Para verificar la raíz, la ecuación se expresa como <code>f(T)=0</code>, donde el equilibrio se alcanza cuando la diferencia entre el valor actual de temperatura y el valor calculado por el modelo es prácticamente nula:</p>
                 <div class="formula">f(T) = T − 18 − 8e<sup>−0.15T</sup> = 0</div>
                 <p>Se emplea directamente la forma de iteración <code>T = g(T)</code> y la aproximación inicial indicada en la guía:</p>
                 <div class="formula">g(T) = 18 + 8e<sup>−0.15T</sup> &nbsp;&nbsp; | &nbsp;&nbsp; T<sub>0</sub> = 20</div>
-                <p>La convergencia es razonable porque <code>g′(T) = −1.2e<sup>−0.15T</sup></code> y, cerca de la solución, su magnitud es menor que 1.</p>
-                <div class="info-strip">
-                    <article><span>Variable</span><strong>T en °C</strong></article>
-                    <article><span>Inicio</span><strong>T₀ = 20</strong></article>
-                    <article><span>Meta</span><strong>Equilibrio térmico</strong></article>
-                </div>
+                <p>La convergencia es razonable porque <code>g′(T) = −1.2e<sup>−0.15T</sup></code> y, cerca de la solución, su magnitud es menor que 1.</p>               
             </div>
             <div class="card">
-                <h2>Programa computacional <span class="tag">Método de Punto Fijo</span></h2>
-                <p>Se muestra cada iteración con el valor de la variable, la función evaluada y el error relativo porcentual. El criterio de parada es ε<sub>a</sub> ≤ 0.01% o 50 iteraciones.</p>
-                <ul class="doc-checklist">
-                    <li>Se justifica la forma iterativa <code>g(T)</code> a partir del modelo de equilibrio térmico.</li>
-                    <li>Se calcula <code>T<sub>n+1</sub>=g(T<sub>n</sub>)</code> desde la aproximación inicial indicada.</li>
-                    <li>La tabla reporta valor anterior, valor nuevo, <code>f(T)</code> y error aproximado.</li>
-                    <li>La gráfica permite observar la disminución del error durante la convergencia.</li>
-                    <li>La interpretación final valida que <code>f(T)</code> queda cercano a cero.</li>
-                </ul>
+                <h2>Programa computacional</h2>            
                 <form class="controls" onsubmit="event.preventDefault(); runProblem('p3');">
                     <div class="field"><label for="p3-x0">T₀ (inicial)</label><input type="number" id="p3-x0" value="20" step="0.1"></div>
                     <div class="field"><label for="p3-tol">Tolerancia (%)</label><input type="number" id="p3-tol" value="0.01" step="0.01"></div>
-                    <div class="field"><label for="p3-max">Iter. máximas</label><input type="number" id="p3-max" value="50" step="1"></div>
+                    <div class="field"><label for="p3-max">Iteraciones</label><input type="number" id="p3-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p3-error" class="err" role="alert"></p>
@@ -217,32 +176,19 @@
         <!-- ===================== PROBLEMA 4: NEWTON-RAPHSON ===================== -->
         <section class="panel" id="p4" role="tabpanel" aria-labelledby="tab-p4">
             <div class="card">
-                <h2>Dimensionamiento de almacenamiento <span class="tag">Newton-Raphson</span></h2>
+                <h2>Dimensionamiento de un sistema de almacenamiento</h2>
                 <p>Una empresa dimensiona un sistema de almacenamiento para una aplicación que procesa grandes volúmenes de información. El tiempo promedio de respuesta <code>t</code>, en milisegundos, se aproxima resolviendo:</p>
                 <div class="formula">f(t) = t³ − 7t − 5 = 0</div>
                 <p>La solución positiva representa el tiempo de respuesta asociado a una condición de operación. Para Newton-Raphson se usa:</p>
                 <div class="formula">t<sub>n+1</sub> = t<sub>n</sub> − f(t<sub>n</sub>) / f′(t<sub>n</sub>) &nbsp;&nbsp; | &nbsp;&nbsp; f′(t) = 3t² − 7</div>
-                <p>La guía no fija un valor inicial para este problema; se propone <strong>t₀ = 2</strong> como valor inicial positivo para iniciar la búsqueda de la raíz física. Además, en esa zona <code>f′(t)</code> no es cero, por lo que la iteración puede aplicarse sin división inválida.</p>
-                <div class="info-strip">
-                    <article><span>Variable</span><strong>t en ms</strong></article>
-                    <article><span>Derivada</span><strong>3t² − 7</strong></article>
-                    <article><span>Solución</span><strong>Raíz positiva</strong></article>
-                </div>
+                <p>La guía no fija un valor inicial para este problema; se propone <strong>t₀ = 2</strong> como valor inicial positivo para iniciar la búsqueda de la raíz física. Además, en esa zona <code>f′(t)</code> no es cero, por lo que la iteración puede aplicarse sin división inválida.</p>             
             </div>
             <div class="card">
-                <h2>Programa computacional <span class="tag">Método de Newton-Raphson</span></h2>
-                <p>La tabla reporta el valor iterativo, <code>f(t)</code>, <code>f′(t)</code> y el error relativo porcentual. El programa conserva el criterio ε<sub>a</sub> ≤ 0.01% o 50 iteraciones y controla derivadas nulas o demasiado pequeñas.</p>
-                <ul class="doc-checklist">
-                    <li>Se plantea la raíz positiva como el tiempo promedio de respuesta asociado a la condición de operación.</li>
-                    <li>Se evalúa la función cúbica y su derivada en cada aproximación.</li>
-                    <li>Se verifica que la raíz obtenida sea positiva, porque esa es la condición física del enunciado.</li>
-                    <li>Se incluye gráfica de error para analizar la rapidez de convergencia.</li>
-                    <li>El resultado representa el tiempo promedio de respuesta del sistema de almacenamiento.</li>
-                </ul>
+                <h2>Programa computacional</h2>
                 <form class="controls" onsubmit="event.preventDefault(); runProblem('p4');">
-                    <div class="field"><label for="p4-x0">t₀ (inicial)</label><input type="number" id="p4-x0" value="2" step="0.1"></div>
-                    <div class="field"><label for="p4-tol">Tolerancia (%)</label><input type="number" id="p4-tol" value="0.01" step="0.01"></div>
-                    <div class="field"><label for="p4-max">Iter. máximas</label><input type="number" id="p4-max" value="50" step="1"></div>
+                    <div class="field"><label for="p4-x0">t₀(inicial)</label><input type="number" id="p4-x0" value="2" step="0.1"></div>
+                    <div class="field"><label for="p4-tol">Tolerancia(%)</label><input type="number" id="p4-tol" value="0.01" step="0.01"></div>
+                    <div class="field"><label for="p4-max">Iteracioines</label><input type="number" id="p4-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p4-error" class="err" role="alert"></p>
@@ -253,32 +199,19 @@
         <!-- ===================== PROBLEMA 5: SECANTE ===================== -->
         <section class="panel" id="p5" role="tabpanel" aria-labelledby="tab-p5">
             <div class="card">
-                <h2>Optimización del rendimiento del servidor <span class="tag">Secante</span></h2>
+                <h2>Optimización del rendimiento de un servidor</h2>
                 <p>Un servidor experimenta una variación en su rendimiento cuando aumenta el número de solicitudes simultáneas. El nivel de carga normalizado <code>x</code> debe satisfacer:</p>
                 <div class="formula">f(x) = e<sup>−x</sup> − x² + 0.2 = 0</div>
                 <p>Se busca el valor de <code>x</code> que identifica un punto de operación del servidor. La guía no especifica dos valores iniciales, por lo que se proponen <strong>x₀ = 0</strong> y <strong>x₁ = 1</strong>, valores cercanos a una raíz y con evaluaciones distintas para evitar un denominador nulo en la fórmula de la secante.</p>
                 <div class="formula">x<sub>n+1</sub> = x<sub>n</sub> − f(x<sub>n</sub>)·(x<sub>n−1</sub>−x<sub>n</sub>) / (f(x<sub>n−1</sub>)−f(x<sub>n</sub>))</div>
-                <div class="info-strip">
-                    <article><span>Variable</span><strong>x normalizada</strong></article>
-                    <article><span>Inicio</span><strong>x₀=0, x₁=1</strong></article>
-                    <article><span>Meta</span><strong>Punto operativo</strong></article>
-                </div>
             </div>
             <div class="card">
-                <h2>Programa computacional <span class="tag">Método de la Secante</span></h2>
-                <p>La Secante usa dos aproximaciones iniciales, evita calcular una derivada explícita y reporta cada iteración con <code>x</code>, <code>f(x)</code> y ε<sub>a</sub>. El criterio de parada es ε<sub>a</sub> ≤ 0.01% o 50 iteraciones.</p>
-                <ul class="doc-checklist">
-                    <li>Se interpreta <code>x</code> como un parámetro normalizado de carga del servidor.</li>
-                    <li>Se reemplaza la derivada por la pendiente entre dos aproximaciones sucesivas.</li>
-                    <li>Se controla que los valores iniciales sean distintos para evitar una división por cero.</li>
-                    <li>Se genera la tabla solicitada con iteración, valores iniciales, nuevo valor, <code>f(x)</code> y error.</li>
-                    <li>La interpretación relaciona la raíz con el comportamiento del servidor ante solicitudes simultáneas.</li>
-                </ul>
+                <h2>Programa computacional</h2>
                 <form class="controls" onsubmit="event.preventDefault(); runProblem('p5');">
                     <div class="field"><label for="p5-x0">x₀ (inicial)</label><input type="number" id="p5-x0" value="0" step="0.1"></div>
                     <div class="field"><label for="p5-x1">x₁ (inicial)</label><input type="number" id="p5-x1" value="1" step="0.1"></div>
                     <div class="field"><label for="p5-tol">Tolerancia (%)</label><input type="number" id="p5-tol" value="0.01" step="0.01"></div>
-                    <div class="field"><label for="p5-max">Iter. máximas</label><input type="number" id="p5-max" value="50" step="1"></div>
+                    <div class="field"><label for="p5-max">Iteraciones</label><input type="number" id="p5-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p5-error" class="err" role="alert"></p>
@@ -289,42 +222,28 @@
         <!-- ===================== PROBLEMA 4 · MÉTODO DE MÜLLER ===================== -->
         <section class="panel" id="p8" role="tabpanel" aria-labelledby="tab-p8">
             <div class="card">
-                <h2>Estabilidad de un filtro digital IIR <span class="tag">Müller</span></h2>
+                <h2>Estabilidad de un filtro digital IIR</h2>
                 <p>En procesamiento digital de audio para una plataforma de streaming se utiliza un filtro IIR. Su estabilidad depende de las raíces del polinomio denominador característico <code>D(z)</code>: el filtro es estable solo si todas cumplen <code>|z| &lt; 1</code>, es decir, si permanecen dentro del círculo unitario del plano Z.</p>
                 <div class="formula">D(z) = 8z⁴ − 6z³ − 3z² + 3z − 1 = 0<small>Puntos iniciales: z₀=0, z₁=0.5, z₂=1.0 · tolerancia ε=10⁻⁵</small></div>
-                <div class="info-strip">
-                    <article><span>Polinomio</span><strong>Grado 4</strong></article>
-                    <article><span>Criterio</span><strong>|zᵢ| &lt; 1</strong></article>
-                    <article><span>Entrega</span><strong>Raíces y estabilidad</strong></article>
-                </div>
             </div>
 
             <div class="card">
-                <h2>Delimitación teórica solicitada <span class="tag">Descartes · Lagrange · Horner</span></h2>
+                <h2>Delimitación teórica</h2>
                 <div class="theory-grid">
                     <article><h3>Criterio de Descartes</h3><p><code>D(z)</code> tiene signos +,−,−,+,−: presenta 3 cambios, por lo que posee 3 o 1 raíces reales positivas. <code>D(−z)</code> tiene signos +,+,−,−,−: presenta 1 cambio, así que posee exactamente 1 raíz real negativa.</p></article>
                     <article><h3>Cota global de Lagrange</h3><p>Al normalizar: <code>z⁴−0.75z³−0.375z²+0.375z−0.125</code>. La cota es <code>R=1+max(0.75,0.375,0.375,0.125)=1.75</code>; todas las raíces están en <code>|z|≤1.75</code>.</p></article>
-                    <article><h3>Esquema de Horner</h3><p>El polinomio se evalúa como <code>((((8z−6)z−3)z+3)z−1)</code>, reduciendo operaciones y el error de redondeo durante las iteraciones.</p></article>
                 </div>
-                <div class="method-note">Esta delimitación no reemplaza el cálculo numérico: acota y orienta el análisis antes de aplicar Müller, deflación y verificación con módulos.</div>
             </div>
 
             <div class="card">
-                <h2>Implementación y análisis de ingeniería <span class="tag">Müller + deflación</span></h2>
-                <p>Müller parte de <code>z₀=0</code>, <code>z₁=0.5</code> y <code>z₂=1.0</code> para hallar la primera raíz con ε=10⁻⁵. Después se aplica deflación polinomial, se calculan las raíces restantes, se obtiene cada módulo <code>|zᵢ|</code> y se concluye si el filtro es estable o inestable.</p>
-                <ul class="doc-checklist">
-                    <li>Se aplica el método de Müller sobre el polinomio característico del filtro IIR.</li>
-                    <li>Se registra la tabla de convergencia de la primera raíz calculada con Müller.</li>
-                    <li>Se divide sintéticamente el polinomio usando la primera raíz encontrada.</li>
-                    <li>Se listan todas las raíces, sus módulos y la decisión final de estabilidad del filtro IIR.</li>
-                    <li>La conclusión usa el criterio <code>|zᵢ|&lt;1</code> para determinar estabilidad.</li>
-                </ul>
+                <h2>Implementación y análisis de ingeniería</h2>
+                <p>Müller parte de <code>z₀=0</code>, <code>z₁=0.5</code> y <code>z₂=1.0</code> para hallar la primera raíz con ε=10⁻⁵. Después se aplica deflación polinomial, se calculan las raíces restantes, se obtiene cada módulo <code>|zᵢ|</code> y se concluye si el filtro es estable o inestable.</p>        
                 <form class="controls" onsubmit="event.preventDefault(); runMullerProblem();">
                     <div class="field"><label for="p8-x0">z₀</label><input type="number" id="p8-x0" value="0" step="any"></div>
                     <div class="field"><label for="p8-x1">z₁</label><input type="number" id="p8-x1" value="0.5" step="any"></div>
                     <div class="field"><label for="p8-x2">z₂</label><input type="number" id="p8-x2" value="1" step="any"></div>
-                    <div class="field"><label for="p8-tol">Tolerancia ε</label><input type="number" id="p8-tol" value="0.00001" step="any"></div>
-                    <div class="field"><label for="p8-max">Iter. máximas</label><input type="number" id="p8-max" value="50" step="1"></div>
+                    <div class="field"><label for="p8-tol">Tolerancia</label><input type="number" id="p8-tol" value="0.00001" step="any"></div>
+                    <div class="field"><label for="p8-max">Iteraciones</label><input type="number" id="p8-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
                 <p id="p8-error" class="err" role="alert"></p>
@@ -334,18 +253,7 @@
 
 <section class="panel" id="p6" role="tabpanel" aria-labelledby="tab-p6">
             <div class="card">
-                <h2>Herramienta complementaria de práctica <span class="tag">Funciones propias</span></h2>
-                
-                <p style="margin-bottom: 6px;">
-                    Prueba funciones adicionales con la misma estructura de los ejercicios: define la variable de trabajo (por ejemplo <code>C</code>, <code>t</code> o <code>x</code>), escribe la ecuación y selecciona el método numérico correspondiente.
-                </p>
-                <div class="method-note">Esta sección no reemplaza los ejercicios principales: sirve para practicar, comprobar intervalos, ensayar despejes y validar funciones parecidas sin alterar los métodos originales. En Bisección y Falsa Posición se usa error porcentual; en Müller se usa la tolerancia absoluta ε solicitada para el polinomio.</div>
-                
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                    Disponibles: <code>+ − * / ^</code>, <code>sqrt()</code> <code>exp()</code> <code>ln()</code> 
-                    <code>log10()</code> <code>sin()</code> <code>cos()</code> <code>tan()</code> <code>abs()</code> 
-                    <code>pow(a,b)</code> <code>PI</code> <code>E</code>. También acepta <code>x²</code>, <code>x³</code>, <code>√x</code>, <code>2x</code>, <code>0,15</code> y ecuaciones como <code>f(x)=0</code>. Usa <code>ln</code> para logaritmo natural.
-                </p>
+                <h2>Herramienta complementaria de práctica</h2>                                    
 
                 <form class="controls" style="margin-bottom: 6px;">
                     <div class="field" style="width: 100px; flex-shrink: 0;">
@@ -386,11 +294,11 @@
 
                 <form class="controls" style="margin-top: 12px;">
                     <div class="field" id="p6-a-wrap">
-                        <label for="p6-a" id="p6-a-label">a (límite inf.)</label>
+                        <label for="p6-a" id="p6-a-label">a</label>
                         <input type="number" id="p6-a" name="p6-a" value="1" step="any">
                     </div>
                     <div class="field" id="p6-b-wrap">
-                        <label for="p6-b" id="p6-b-label">b (límite sup.)</label>
+                        <label for="p6-b" id="p6-b-label">b</label>
                         <input type="number" id="p6-b" name="p6-b" value="2" step="any">
                     </div>
                     <div class="field" id="p6-c-wrap" hidden>
@@ -398,32 +306,15 @@
                         <input type="number" id="p6-c" name="p6-c" value="1" step="any">
                     </div>
                     <div class="field">
-                        <label for="p6-tol" id="p6-tol-label">Tolerancia (%)</label>
+                        <label for="p6-tol" id="p6-tol-label">Tolerancia(%)</label>
                         <input type="number" id="p6-tol" name="p6-tol" value="0.01" step="0.01">
                     </div>
                     <div class="field">
-                        <label for="p6-max">Iter. máximas</label>
+                        <label for="p6-max">Iteraciones</label>
                         <input type="number" id="p6-max" name="p6-max" value="50" step="1">
                     </div>
                     <button type="submit" class="btn" style="margin-top: 2px;">▶ Calcular</button>
                 </form>
-
-                <div class="examples">
-                    <span style="font-weight: 600; color: var(--text-secondary);">Según el método:</span>
-                    <span style="color: var(--text-muted);">Bisección/Falsa Posición → usa <code>a,b</code>; Secante → usa <code>x₀,x₁</code>; Müller → usa <code>x₀,x₁,x₂</code>; Newton → completa <code>f′(x)</code>; Punto Fijo → completa <code>g(x)</code>.</span>
-                    <br><span style="font-weight: 600; color: var(--text-secondary);">Ejemplos:</span>
-                    <code>x^3 - x - 2</code> ·
-                    <code>exp(-x) - x</code> ·
-                    <code>ln(x) + x - 3</code> ·
-                    <code>cos(x) - x</code> ·
-                    <br style="display: block; margin: 4px 0;">
-                    <span style="color: var(--text-muted); font-size: 12px;">Con otra variable:</span>
-                    <code>1/(C-8.5)-0.35*ln(C-2)</code> 
-                    <span style="color: var(--text-light); font-size: 12px;">(Variable = C)</span> ·
-                    <br style="display: block; margin: 2px 0;">
-                    <code>45 + 12t - 20e^(0.4t)</code>
-                    <span style="color: var(--text-light); font-size: 12px;">(Variable = t — reconoce multiplicación implícita y "e" de Euler)</span>
-                </div>
 
                 <p id="p6-error" class="err" role="alert" style="display: none;"></p>
                 <div id="p6-results" aria-live="polite"></div>
@@ -433,10 +324,8 @@
         <!-- ===================== COMPARADOR DE LOS 6 MÉTODOS ===================== -->
         <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
             <div class="card">
-                <h2>Validación comparativa de métodos <span class="tag">Seis métodos</span></h2>
-                <p>Contrasta un mismo ejercicio con Bisección, Falsa Posición, Punto Fijo, Newton-Raphson, Secante y Müller. Esta vista sirve para revisar convergencia, número de iteraciones, aproximación final y comportamiento del error antes de presentar resultados.</p>
-                <div class="method-note">Úsalo como apoyo de validación: permite observar si distintos procedimientos llegan a la misma raíz aproximada, cuántas iteraciones requieren y cómo cambia el error.</div>
-                <p style="font-size: 13px; color: var(--text-muted);"><code>g(x)</code>, la derivada y el segundo valor son opcionales. Si defines un intervalo con cambio de signo, los métodos abiertos se inicializan dentro de ese tramo para comparar la misma raíz. Müller usa su propia tolerancia absoluta ε; los demás métodos usan error relativo porcentual.</p>
+                <h2>Validación comparativa de métodos</h2>
+                <p>Contrasta un mismo ejercicio con Bisección, Falsa Posición, Punto Fijo, Newton-Raphson, Secante y Müller.</p>
 
                 <form class="compare-form">
                     <div class="compare-function-grid">
@@ -463,14 +352,11 @@
                         <div class="field"><label for="p7-c">x₂ para Müller</label><input type="number" id="p7-c" value="1" step="any"></div>
                         <div class="field"><label for="p7-tol">Tolerancia (%)</label><input type="number" id="p7-tol" value="0.01" step="any"></div>
                         <div class="field"><label for="p7-muller-tol">ε Müller</label><input type="number" id="p7-muller-tol" value="0.00001" step="any"></div>
-                        <div class="field"><label for="p7-max">Iter. máximas</label><input type="number" id="p7-max" value="50" step="1"></div>
+                        <div class="field"><label for="p7-max">Iteraciones</label><input type="number" id="p7-max" value="50" step="1"></div>
                         <button type="submit" class="btn">▶ Calcular con los 6 métodos</button>
                     </div>
                 </form>
 
-                <div class="examples">
-                    <strong>Cómo se usan los valores:</strong> Bisección y Falsa Posición usan el intervalo <code>[a,b]</code>. Newton-Raphson y Punto Fijo arrancan desde el punto medio del intervalo objetivo; Secante usa los extremos; Müller usa tres puntos dentro del mismo tramo cuando es posible.
-                </div>
                 <p id="p7-error" class="err" role="alert" style="display: none;"></p>
                 <div id="p7-results" aria-live="polite"></div>
             </div>
