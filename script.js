@@ -624,7 +624,7 @@ function runCustom() {
     if(!rows.length) throw new Error('No se pudo generar una iteración.');
     const last=rows.at(-1);
     const tolText = method === 'muller' ? `ε=${tol}` : `${tol}%`;
-    interp=`<strong>Interpretación:</strong> la raíz aproximada es <code>${varName} ≈ ${fmt(last.xr,6)}</code>, obtenida con ${label.toLowerCase()} y una tolerancia de ${tolText}. Usa esta herramienta como verificación adicional o práctica con funciones propias sin modificar los ejercicios base del proyecto.`;
+    interp=`<strong>Interpretación:</strong> la raíz aproximada es <code>${varName} ≈ ${fmt(last.xr,6)}</code>, obtenida con ${label.toLowerCase()} y una tolerancia de ${tolText}.`;
     showResult('p6',rows,label,type,interp,color,{ absoluteTolerance: method === 'muller' });
   } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
 }
