@@ -232,6 +232,7 @@
                 <div class="theory-grid">
                     <article><h3>Criterio de Descartes</h3><p><code>D(z)</code> tiene signos +,−,−,+,−: presenta 3 cambios, por lo que posee 3 o 1 raíces reales positivas. <code>D(−z)</code> tiene signos +,+,−,−,−: presenta 1 cambio, así que posee exactamente 1 raíz real negativa.</p></article>
                     <article><h3>Cota global de Lagrange</h3><p>Al normalizar: <code>z⁴−0.75z³−0.375z²+0.375z−0.125</code>. La cota es <code>R=1+max(0.75,0.375,0.375,0.125)=1.75</code>; todas las raíces están en <code>|z|≤1.75</code>.</p></article>
+                    <article><h3>Esquema de Horner</h3><p>El polinomio se evalúa como <code>((((8z−6)z−3)z+3)z−1)</code>, reduciendo operaciones al calcular <code>D(z)</code> en las iteraciones de Müller.</p></article>
                 </div>
             </div>
 
@@ -242,7 +243,7 @@
                     <div class="field"><label for="p8-x0">z₀</label><input type="number" id="p8-x0" value="0" step="any"></div>
                     <div class="field"><label for="p8-x1">z₁</label><input type="number" id="p8-x1" value="0.5" step="any"></div>
                     <div class="field"><label for="p8-x2">z₂</label><input type="number" id="p8-x2" value="1" step="any"></div>
-                    <div class="field"><label for="p8-tol">Tolerancia</label><input type="number" id="p8-tol" value="0.00001" step="any"></div>
+                    <div class="field"><label for="p8-tol">Tolerancia ε</label><input type="number" id="p8-tol" value="0.00001" step="any"></div>
                     <div class="field"><label for="p8-max">Iteraciones</label><input type="number" id="p8-max" value="50" step="1"></div>
                     <button type="submit" class="btn">▶ Calcular</button>
                 </form>
